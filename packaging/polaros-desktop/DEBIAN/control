@@ -1,0 +1,25 @@
+Package: polaros-desktop
+Version: 1.0.0
+Architecture: all
+Maintainer: PolarOS Team <dev@polaros.dev>
+Installed-Size: 8
+Depends: base-files, base-passwd, coreutils, util-linux, bash, dash, apt, dpkg,
+ sudo, nano, vim, less, man-db, rsync, git, bash-completion,
+ openssh-server, openssh-client, curl, wget, iproute2, net-tools, iputils-ping,
+ dnsutils, traceroute, mtr-tiny, netcat-traditional, socat, ethtool,
+ htop, iotop, iftop, lsof, sysstat, pciutils, usbutils, dmidecode, ncdu, strace,
+ e2fsprogs, parted, fdisk, tar, gzip, xz-utils, cron, logrotate,
+ unattended-upgrades, tmux, pv,
+ openssl, gnupg, ca-certificates, nftables, iptables, fail2ban, acl, apparmor,
+ jq, ripgrep, tree, unzip, zip, screen, watch,
+ fastfetch, polaros-branding
+Recommends: firmware-linux-free
+Section: metapackages
+Priority: optional
+Homepage: https://github.com/polaros
+Description: PolarOS system administration toolset
+ Meta package that pulls in the complete PolarOS package set: base system
+ utilities, networking and remote access, monitoring and diagnostics,
+ maintenance and backup, security, scripting helpers and ARM firmware.
+ .
+ Installing this package turns a minimal Debian ARM64 system into PolarOS.

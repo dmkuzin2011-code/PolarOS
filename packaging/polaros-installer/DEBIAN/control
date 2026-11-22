@@ -1,0 +1,19 @@
+Package: polaros-installer
+Version: 1.0.0
+Architecture: all
+Maintainer: PolarOS Team <dev@polaros.dev>
+Installed-Size: 48
+Depends: whiptail, parted, e2fsprogs, dosfstools, util-linux, mount, gdisk,
+ grub-efi-arm64, squashfs-tools, coreutils, bash, sed, grep
+Recommends: debootstrap
+Section: admin
+Priority: optional
+Homepage: https://github.com/polaros
+Description: PolarOS system installer
+ Interactive text installer for PolarOS. Guides the user through disk
+ selection, partitioning (GPT with a 512 MiB EFI System Partition and an
+ ext4 root), copying the live system, creating an administrator account
+ and installing GRUB EFI.
+ .
+ It works from the PolarOS live ISO and can also install over the network
+ with debootstrap on an existing Debian ARM64 system.

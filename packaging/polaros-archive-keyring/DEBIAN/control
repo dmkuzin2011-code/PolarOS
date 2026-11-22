@@ -1,0 +1,16 @@
+Package: polaros-archive-keyring
+Version: 1.0.0
+Architecture: all
+Maintainer: PolarOS Team <dev@polaros.dev>
+Installed-Size: 12
+Depends: gpgv
+Section: misc
+Priority: optional
+Homepage: https://github.com/polaros
+Description: GnuPG archive key of the PolarOS repository
+ Contains the public key used to verify the Release file of the PolarOS
+ apt repository. Install it and reference the keyring explicitly in
+ /etc/apt/sources.list.d/polaros.sources:
+ .
+ deb [signed-by=/usr/share/keyrings/polaros-archive-keyring.gpg]
+   https://repo.polaros.dev trixie main

@@ -1,0 +1,17 @@
+Package: polaros-branding
+Version: 1.0.0
+Architecture: all
+Maintainer: PolarOS Team <dev@polaros.dev>
+Installed-Size: 24
+Depends: fastfetch
+Replaces: base-files
+Section: admin
+Priority: optional
+Homepage: https://github.com/polaros
+Description: PolarOS branding and identity files
+ Installs the files that identify the system as PolarOS 1.0 (ARM64):
+ /etc/os-release, /usr/lib/os-release, /etc/issue, /etc/issue.net,
+ /etc/motd, the ASCII bear logo and the fastfetch configuration.
+ .
+ The bear is printed once per interactive shell session through
+ /etc/profile.d/10-polaros-fastfetch.sh.

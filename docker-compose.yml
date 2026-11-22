@@ -1,0 +1,17 @@
+services:
+  polaros:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        POLAROS_VERSION: "1.0"
+    image: polaros:1.0-arm64
+    platform: linux/arm64
+    hostname: polaros
+    container_name: polaros
+    tty: true
+    stdin_open: true
+    environment:
+      TERM: xterm-256color
+    # Login shell so the PolarOS bear is printed on attach.
+    command: ["/bin/bash", "-l"]

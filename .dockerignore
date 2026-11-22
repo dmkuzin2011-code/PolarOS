@@ -1,0 +1,17 @@
+# Build artifacts and large binaries are never needed in the build context.
+build/
+vendor/
+target/
+*.qcow2
+*.qcow2.*
+*.iso
+*.img
+*.raw
+*.fd
+*.log
+*.pid
+.git/
+.gitignore
+.idea/
+.vscode/
+scripts/run-vm.bat

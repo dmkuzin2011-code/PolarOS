@@ -1,0 +1,15 @@
+#!/bin/sh
+set -e
+
+# On removal, restore the Debian defaults so the system does not keep
+# claiming to be PolarOS after the package is gone.
+if [ "$1" = "remove" ] || [ "$1" = "purge" ]; then
+    if [ -f /usr/lib/os-release.dpkg-dist ]; then
+        mv -f /usr/lib/os-release.dpkg-dist /usr/lib/os-release
+    fi
+    if [ -f /etc/motd.dpkg-dist ]; then
+        mv -f /etc/motd.dpkg-dist /etc/motd
+    fi
+fi
+
+exit 0

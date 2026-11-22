@@ -1,0 +1,27 @@
+# Build output and artifacts
+build/
+vendor/
+target/
+
+# Disk images and firmware
+*.qcow2
+*.qcow2.*
+*.img
+*.raw
+*.iso
+*.fd
+
+# Logs and runtime state
+*.log
+*.pid
+*.err
+
+# Rust
+Cargo.lock.bak
+
+# Editor / OS
+.idea/
+.vscode/
+*.swp
+Thumbs.db
+desktop.ini

@@ -1,0 +1,17 @@
+#!/bin/sh
+set -e
+
+KEYRING=/usr/share/keyrings/polaros-archive-keyring.gpg
+
+if [ -f "$KEYRING" ]; then
+    chmod 0644 "$KEYRING"
+fi
+
+# If the package is installed from a local file while the repository is
+# already configured, refresh the package lists so the key is picked up.
+if [ -f /etc/apt/sources.list.d/polaros.sources ] && command -v apt-get >/dev/null 2>&1; then
+    apt-get update -o Dir::Etc::sourcelist=/etc/apt/sources.list.d/polaros.sources \
+        -o Dir::Etc::sourceparts=- -o APT::Get::List-Cleanup=0 >/dev/null 2>&1 || true
+fi
+
+exit 0

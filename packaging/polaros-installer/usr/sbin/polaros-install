@@ -1,0 +1,211 @@
+#!/bin/bash
+# polaros-install - PolarOS system installer.
+#
+# A self-contained TUI installer: partitions a disk, copies the live system,
+# creates a user and installs GRUB EFI. Designed for the PolarOS live ISO and
+# for network installs from a Debian ARM64 system.
+#
+# Usage:
+#   polaros-install              interactive
+#   polaros-install --help
+#
+set -uo pipefail
+
+VERSION="1.0.0"
+LIBDIR="$(dirname "$(readlink -f "$0")")/../lib/polaros-installer"
+[ -d "$LIBDIR" ] || LIBDIR=/usr/lib/polaros-installer
+
+# shellcheck source=common.sh
+. "$LIBDIR/common.sh"
+# shellcheck source=disk.sh
+. "$LIBDIR/disk.sh"
+# shellcheck source=system.sh
+. "$LIBDIR/system.sh"
+# shellcheck source=boot.sh
+. "$LIBDIR/boot.sh"
+
+TARGET_DISK=""
+EFI_PART=""
+ROOT_PART=""
+HOSTNAME="polaros"
+USERNAME="polaros"
+USER_PASSWORD=""
+TIMEZONE="UTC"
+LOCALE="en_US"
+KEYMAP="us"
+
+usage() {
+    cat <<EOF
+polaros-install $VERSION
+
+Install PolarOS on a local disk.
+
+Options:
+  -h, --help      show this help and exit
+  -V, --version   print the version and exit
+
+The installer is interactive and requires root. All data on the selected
+disk is erased. A full log is written to $LOG_FILE.
+EOF
+}
+
+parse_args() {
+    case "${1:-}" in
+        -h|--help) usage; exit 0 ;;
+        -V|--version) printf 'polaros-install %s\n' "$VERSION"; exit 0 ;;
+        "") ;;
+        *) printf 'Unknown argument: %s\n\n' "$1" >&2; usage; exit 2 ;;
+    esac
+}
+
+# ---------------------------------------------------------------------------
+# Interactive flow
+# ---------------------------------------------------------------------------
+ask_hostname() {
+    local value
+    while true; do
+        value=$(ui_input "Hostname" "Name for this computer:" "$HOSTNAME") || exit 1
+        if valid_hostname "$value"; then
+            HOSTNAME="$value"
+            return
+        fi
+        ui_error "Invalid hostname: $value\n\nUse letters, digits and hyphens only."
+    done
+}
+
+ask_user() {
+    local value
+    while true; do
+        value=$(ui_input "User account" "Username for the administrator account:" "$USERNAME") || exit 1
+        if valid_username "$value"; then
+            USERNAME="$value"
+            break
+        fi
+        ui_error "Invalid username: $value\n\nUse lowercase letters, digits, '-' or '_'."
+    done
+
+    local first second
+    while true; do
+        first=$(ui_password "Password" "Password for $USERNAME:") || exit 1
+        if [ ${#first} -lt 4 ]; then
+            ui_error "Password must be at least 4 characters."
+            continue
+        fi
+        second=$(ui_password "Password" "Repeat the password:") || exit 1
+        if [ "$first" = "$second" ]; then
+            USER_PASSWORD="$first"
+            return
+        fi
+        ui_error "Passwords do not match."
+    done
+}
+
+ask_timezone() {
+    local choice
+    choice=$(ui_menu "Timezone" "Select your timezone:" \
+        "UTC"      "Coordinated Universal Time" \
+        "Europe/Moscow"    "Moscow (UTC+3)" \
+        "Europe/Berlin"    "Central European Time" \
+        "Europe/London"    "Greenwich Mean Time" \
+        "Asia/Almaty"      "Almaty (UTC+5)" \
+        "Asia/Tokyo"       "Japan (UTC+9)" \
+        "America/New_York" "US Eastern") || exit 1
+    TIMEZONE="$choice"
+}
+
+ask_keyboard() {
+    local choice
+    choice=$(ui_menu "Keyboard" "Select the keyboard layout:" \
+        "us" "English (US)" \
+        "ru" "Russian" \
+        "de" "German" \
+        "fr" "French" \
+        "es" "Spanish") || exit 1
+    KEYMAP="$choice"
+    case "$choice" in
+        ru) LOCALE="ru_RU" ;;
+        de) LOCALE="de_DE" ;;
+        fr) LOCALE="fr_FR" ;;
+        es) LOCALE="es_ES" ;;
+        *)  LOCALE="en_US" ;;
+    esac
+}
+
+confirm_plan() {
+    ui_yesno "Ready to install" \
+"PolarOS will be installed with these settings:
+
+  Disk      : $TARGET_DISK
+  Hostname  : $HOSTNAME
+  User      : $USERNAME
+  Timezone  : $TIMEZONE
+  Keyboard  : $KEYMAP
+  Locale    : $LOCALE.UTF-8
+
+Layout:
+  $TARGET_DISK 1  512 MiB  EFI System (FAT32)
+  $TARGET_DISK 2  rest     root (ext4)
+
+ALL DATA ON $TARGET_DISK WILL BE ERASED.
+
+Start the installation?"
+}
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+main() {
+    parse_args "$@"
+    require_root
+
+    : >"$LOG_FILE"
+    info "polaros-install $VERSION started"
+
+    require_efi
+
+    # Hide the live medium from the disk list.
+    ROOT_DISK="$(detect_root_disk)"
+    info "live root disk: ${ROOT_DISK:-none}"
+
+    ui_msg "Welcome to PolarOS" \
+"Welcome to the PolarOS installer.
+
+This will install PolarOS 1.0 (ARM64) on your computer.
+The installer needs a UEFI system and will erase the disk you select."
+
+    select_disk
+    ask_hostname
+    ask_user
+    ask_timezone
+    ask_keyboard
+
+    confirm_plan || { info "aborted by user"; exit 0; }
+
+    info "starting installation"
+    partition_disk
+    format_partitions
+    mount_target
+    install_payload
+    write_fstab
+    configure_hostname
+    configure_timezone
+    configure_locale
+    configure_keyboard
+    create_user
+    bind_virtual_fs
+    finalize_system
+    install_grub_efi
+    verify_boot_files || true
+    unmount_target
+
+    info "installation finished"
+    ui_msg "Installation complete" \
+"PolarOS has been installed on $TARGET_DISK.
+
+Remove the installation media and reboot.
+
+User: $USERNAME
+Log:  $LOG_FILE"
+}
+
+main "$@"

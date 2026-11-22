@@ -1,0 +1,28 @@
+#!/bin/sh
+set -e
+
+# Rebuild the /etc/os-release symlink contract: Debian ships it as a
+# symlink to /usr/lib/os-release, our package ships both as real files.
+# Nothing to do here beyond making sure permissions are sane.
+
+if [ -f /etc/os-release ]; then
+    chmod 0644 /etc/os-release
+fi
+if [ -f /usr/lib/os-release ]; then
+    chmod 0644 /usr/lib/os-release
+fi
+if [ -f /etc/issue ]; then
+    chmod 0644 /etc/issue
+fi
+if [ -f /etc/motd ]; then
+    chmod 0644 /etc/motd
+fi
+
+if [ -d /etc/fastfetch ]; then
+    chmod 0755 /etc/fastfetch
+fi
+
+echo "PolarOS branding installed."
+echo "Run 'fastfetch' or open a new login shell to see the PolarOS logo."
+
+exit 0
