@@ -101,6 +101,7 @@ rm -rf "$ISOROOT"
 mkdir -p "$ISOROOT/live"
 mkdir -p "$ISOROOT/boot/grub"
 mkdir -p "$ISOROOT/.disk"
+mkdir -p "$ISOROOT/EFI/BOOT"  # <--- ДОБАВИТЬ ВОТ ЭТУ СТРОКУ
 chmod 777 "$ISOROOT/.disk"
 
 # Copy kernel and initrd
