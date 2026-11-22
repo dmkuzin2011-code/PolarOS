@@ -246,7 +246,7 @@ rm -f /etc/machine-id
 : > /etc/machine-id
 SETUP
 
-chmod +x "$ROOTFS/tmp/setup.sh"
+${SUDO} chmod +x "$ROOTFS/tmp/setup.sh"
 ${SUDO} chroot "$ROOTFS" /tmp/setup.sh
 rm -f "$ROOTFS/tmp/setup.sh"
 
@@ -264,20 +264,20 @@ INITRD=$(ls "$ROOTFS"/boot/initrd.img-* | head -1)
 ${SUDO} cp "$KERNEL" "$ISOROOT/live/vmlinuz"
 ${SUDO} cp "$INITRD" "$ISOROOT/live/initrd.img"
 
-cat >"$ISOROOT/.disk/info" <<EOF
+${SUDO} cat >"$ISOROOT/.disk/info" <<EOF
 PolarOS 1.0 (ARM64) - $(date -u +%Y-%m-%d)
 EOF
 
 # ---------------------------------------------------------------------------
 step "6/8 building squashfs"
 # ---------------------------------------------------------------------------
-mksquashfs "$ROOTFS" "$ISOROOT/live/filesystem.squashfs" \
+${SUDO} mksquashfs "$ROOTFS" "$ISOROOT/live/filesystem.squashfs" \
     -comp "$SQUASHFS_COMP" -b "$SQUASHFS_BLOCK" -no-progress -noappend
 
 # ---------------------------------------------------------------------------
 step "7/8 building the EFI boot image"
 # ---------------------------------------------------------------------------
-cat >"$ISOROOT/boot/grub/grub.cfg" <<'EOF'
+${SUDO} cat >"$ISOROOT/boot/grub/grub.cfg" <<'EOF'
 set timeout=10
 set default=0
 
@@ -310,17 +310,17 @@ grub-mkstandalone --format=arm64-efi --output="$WORK/BOOTAA64.EFI" \
 
 # A FAT image holding the standalone GRUB binary, used as the El Torito
 # EFI boot image. Created with mkfs.vfat + mtools: no loop device needed.
-rm -f "$ISOROOT/boot/grub/efi.img"
-dd if=/dev/zero of="$ISOROOT/boot/grub/efi.img" bs=1M count=16 status=none
-mkfs.vfat -n POLAROS_EFI "$ISOROOT/boot/grub/efi.img" >/dev/null
-mmd -i "$ISOROOT/boot/grub/efi.img" ::/EFI ::/EFI/BOOT
-mcopy -i "$ISOROOT/boot/grub/efi.img" "$WORK/BOOTAA64.EFI" ::/EFI/BOOT/BOOTAA64.EFI
+${SUDO} rm -f "$ISOROOT/boot/grub/efi.img"
+${SUDO} dd if=/dev/zero of="$ISOROOT/boot/grub/efi.img" bs=1M count=16 status=none
+${SUDO} mkfs.vfat -n POLAROS_EFI "$ISOROOT/boot/grub/efi.img" >/dev/null
+${SUDO} mmd -i "$ISOROOT/boot/grub/efi.img" ::/EFI ::/EFI/BOOT
+${SUDO} mcopy -i "$ISOROOT/boot/grub/efi.img" "$WORK/BOOTAA64.EFI" ::/EFI/BOOT/BOOTAA64.EFI
 
 # ---------------------------------------------------------------------------
 step "8/8 building the ISO"
 # ---------------------------------------------------------------------------
 mkdir -p "$ROOT/build"
-xorriso -as mkisofs \
+${SUDO} xorriso -as mkisofs \
     -iso-level 3 \
     -full-iso9660-filenames \
     -volid POLAROS_LIVE \
@@ -333,6 +333,9 @@ xorriso -as mkisofs \
 
 ls -lh "$ROOT/build/$ISO_NAME"
 printf '\nISO ready: build/%s\n' "$ISO_NAME"
+
+
+
 
 
 
