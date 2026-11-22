@@ -150,7 +150,7 @@ EOF
 # -------------------------------------------------------------
 if [ "${POLAROS_NO_ACCOUNT:-0}" = "1" ]; then
     # Root without any password — usable with no UNIX account at all.
-    echo 'root:' | chpasswd
+# Root without any password — usable with no UNIX account at all.
     passwd -d root 2>/dev/null || true
 
     # Passwordless root sudoers (no-op for root itself, but harmless)
@@ -331,3 +331,4 @@ xorriso -as mkisofs \
 
 ls -lh "$ROOT/build/$ISO_NAME"
 printf '\nISO ready: build/%s\n' "$ISO_NAME"
+
