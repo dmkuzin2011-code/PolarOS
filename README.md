@@ -1,8 +1,8 @@
 ﻿<div align="center">
-    <img src="Polar.png" align="center" width="120"/>
+    <img src="assets/PolarSun.png" align="center" width="1000"/>
 </div>
 
-# 🐻 PolarOS
+# PolarOS
 
 **ARM64 (aarch64)** distribution based on **Debian 13 (Trixie)**.  
 Ships with a system-administration toolset and PolarOS branding — including a bear logo in `fastfetch`.
@@ -212,8 +212,12 @@ The container flavour is built independently: `debian:trixie-slim` plus the same
 ## 🐻 Bear Programs for ARM
 
 Bear-themed programs for ARM are coming soon!
+---
+<div align="left">
+    <img src="assets/Bears.png" align="center" width="100"/>
+</div>
 
-👉 **[ursus_praefectus](https://github.com/dmkuzin2011-code/ursus_praefectus)**
+-> **[ursus_praefectus](https://github.com/dmkuzin2011-code/ursus_praefectus)**
 
 Stay tuned!
 
