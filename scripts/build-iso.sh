@@ -12,6 +12,13 @@
 #       -v "$PWD:/work" -w /work debian:trixie-slim bash scripts/build-iso.sh
 set -euo pipefail
 
+# Use sudo if not running as root (e.g. GitHub Actions runner)
+if [ "$(id -u)" -ne 0 ]; then
+    SUDO=sudo
+else
+    SUDO=""
+fi
+
 ROOT=${ROOT:-/work}
 WORK=${WORK:-/tmp/iso-build}
 SUITE=trixie
@@ -47,8 +54,8 @@ step() { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
 step "1/8 installing build tools"
 # ---------------------------------------------------------------------------
 export DEBIAN_FRONTEND=noninteractive
-apt-get update -qq
-apt-get install -y -qq --no-install-recommends \
+${SUDO} apt-get update -qq
+${SUDO} apt-get install -y -qq --no-install-recommends \
     debootstrap dosfstools mtools xorriso squashfs-tools \
     grub-efi-arm64-bin grub2-common gzip xz-utils ca-certificates \
     >/dev/null
@@ -61,7 +68,7 @@ if [ "$KEEP_ROOTFS" = "1" ] && [ -x "$ROOTFS/bin/sh" ]; then
 else
     step "2/8 debootstrap $SUITE/$ARCH"
     rm -rf "$ROOTFS"
-    debootstrap --arch="$ARCH" --variant=minbase \
+    ${SUDO} debootstrap --arch="$ARCH" --variant=minbase \
         --include=systemd-sysv,systemd-resolved,dbus,udev,kmod,apt-utils \
         "$SUITE" "$ROOTFS" "$MIRROR"
 fi
@@ -96,9 +103,9 @@ cat >"$ROOTFS/tmp/setup.sh" <<'SETUP'
 set -e
 export DEBIAN_FRONTEND=noninteractive
 
-apt-get update -qq
+${SUDO} apt-get update -qq
 if [ "$FAST" = "1" ]; then
-    apt-get install -y --no-install-recommends \
+    ${SUDO} apt-get install -y --no-install-recommends \
         linux-image-arm64 \
         live-boot live-boot-initramfs-tools \
         initramfs-tools \
@@ -109,7 +116,7 @@ if [ "$FAST" = "1" ]; then
         fastfetch \
         >/dev/null
 else
-    apt-get install -y --no-install-recommends \
+    ${SUDO} apt-get install -y --no-install-recommends \
         linux-image-arm64 \
         live-boot live-boot-initramfs-tools \
         initramfs-tools \
@@ -124,8 +131,8 @@ fi
 # Install our packages — all deps (fastfetch, etc.) are now present.
 if ls /tmp/polaros-debs/*.deb >/dev/null 2>&1; then
     # Use apt-get install so dependency resolution works.
-    apt-get install -y --no-install-recommends /tmp/polaros-debs/*.deb
-    apt-get install -f -y --no-install-recommends
+    ${SUDO} apt-get install -y --no-install-recommends /tmp/polaros-debs/*.deb
+    ${SUDO} apt-get install -f -y --no-install-recommends
 fi
 
 # ---------------------------------------------------------------------------
@@ -230,7 +237,7 @@ systemctl enable ssh || true
 
 # Keep the image small: no docs, no apt caches.
 rm -rf /tmp/polaros-debs
-apt-get clean
+${SUDO} apt-get clean
 rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*.deb
 rm -rf /usr/share/doc/* /usr/share/man/* /usr/share/info/* 2>/dev/null || true
 
@@ -326,3 +333,4 @@ xorriso -as mkisofs \
 
 ls -lh "$ROOT/build/$ISO_NAME"
 printf '\nISO ready: build/%s\n' "$ISO_NAME"
+
