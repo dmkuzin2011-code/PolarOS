@@ -78,13 +78,13 @@ step "3/8 mounting virtual filesystems"
 # ---------------------------------------------------------------------------
 for fs in dev dev/pts proc sys; do
     mkdir -p "$ROOTFS/$fs"
-    mount --bind "/$fs" "$ROOTFS/$fs"
+    ${SUDO} mount --bind "/$fs" "$ROOTFS/$fs"
 done
 
 cleanup_mounts() {
     local mnt
     for mnt in dev/pts dev proc sys; do
-        umount "$ROOTFS/$mnt" 2>/dev/null || true
+        ${SUDO} umount "$ROOTFS/$mnt" 2>/dev/null || true
     done
 }
 trap cleanup_mounts EXIT
@@ -247,11 +247,11 @@ rm -f /etc/machine-id
 SETUP
 
 chmod +x "$ROOTFS/tmp/setup.sh"
-chroot "$ROOTFS" /tmp/setup.sh
+${SUDO} chroot "$ROOTFS" /tmp/setup.sh
 rm -f "$ROOTFS/tmp/setup.sh"
 
 # Rebuild the initramfs so live-boot hooks are included.
-chroot "$ROOTFS" update-initramfs -u -k all
+${SUDO} chroot "$ROOTFS" update-initramfs -u -k all
 
 # ---------------------------------------------------------------------------
 step "5/8 assembling the ISO tree"
@@ -333,4 +333,5 @@ xorriso -as mkisofs \
 
 ls -lh "$ROOT/build/$ISO_NAME"
 printf '\nISO ready: build/%s\n' "$ISO_NAME"
+
 
