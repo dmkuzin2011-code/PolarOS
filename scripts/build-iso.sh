@@ -12,11 +12,9 @@
 #       -v "$PWD:/work" -w /work debian:trixie-slim bash scripts/build-iso.sh
 set -euo pipefail
 
-# Use sudo if not running as root (e.g. GitHub Actions runner)
+# Self-elevate to root if not already (needed for mount, chroot, etc.)
 if [ "$(id -u)" -ne 0 ]; then
-    SUDO=sudo
-else
-    SUDO=""
+    exec sudo -E bash "$0" "$@"
 fi
 
 ROOT=${ROOT:-/work}
@@ -28,9 +26,9 @@ ISO_NAME=${ISO_NAME:-polaros-1.0-arm64.iso}
 
 # -------------------------------------------------------------
 # Fast build options (for slow hosts / emulation)
-#   POLAROS_FAST=1        òÀÔ gzip squashfs + fewer packages (much faster)
-#   POLAROS_SQUASHFS_COMP òÀÔ gzip | xz | zstd  (default: xz, fast: gzip)
-#   POLAROS_KEEP_ROOTFS=1 òÀÔ do not wipe an existing rootfs (re-use cache)
+#   POLAROS_FAST=1        — gzip squashfs + fewer packages (much faster)
+#   POLAROS_SQUASHFS_COMP — gzip | xz | zstd  (default: xz, fast: gzip)
+#   POLAROS_KEEP_ROOTFS=1 — do not wipe an existing rootfs (re-use cache)
 # -------------------------------------------------------------
 FAST=${POLAROS_FAST:-0}
 if [ "$FAST" = "1" ]; then
@@ -54,8 +52,8 @@ step() { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
 step "1/8 installing build tools"
 # ---------------------------------------------------------------------------
 export DEBIAN_FRONTEND=noninteractive
-${SUDO} apt-get update -qq
-${SUDO} apt-get install -y -qq --no-install-recommends \
+apt-get update -qq
+apt-get install -y -qq --no-install-recommends \
     debootstrap dosfstools mtools xorriso squashfs-tools \
     grub-efi-arm64-bin grub2-common gzip xz-utils ca-certificates \
     >/dev/null
@@ -67,8 +65,8 @@ if [ "$KEEP_ROOTFS" = "1" ] && [ -x "$ROOTFS/bin/sh" ]; then
     step "2/8 debootstrap $SUITE/$ARCH (cached, skipped)"
 else
     step "2/8 debootstrap $SUITE/$ARCH"
-    ${SUDO} rm -rf "$ROOTFS"
-    ${SUDO} debootstrap --arch="$ARCH" --variant=minbase \
+    rm -rf "$ROOTFS"
+    debootstrap --arch="$ARCH" --variant=minbase \
         --include=systemd-sysv,systemd-resolved,dbus,udev,kmod,apt-utils \
         "$SUITE" "$ROOTFS" "$MIRROR"
 fi
@@ -78,34 +76,34 @@ step "3/8 mounting virtual filesystems"
 # ---------------------------------------------------------------------------
 for fs in dev dev/pts proc sys; do
     mkdir -p "$ROOTFS/$fs"
-    ${SUDO} mount --bind "/$fs" "$ROOTFS/$fs"
+    mount --bind "/$fs" "$ROOTFS/$fs"
 done
 
 cleanup_mounts() {
     local mnt
     for mnt in dev/pts dev proc sys; do
-        ${SUDO} umount "$ROOTFS/$mnt" 2>/dev/null || true
+        umount "$ROOTFS/$mnt" 2>/dev/null || true
     done
 }
 trap cleanup_mounts EXIT
 
-${SUDO} cp /etc/resolv.conf "$ROOTFS/etc/resolv.conf"
+cp /etc/resolv.conf "$ROOTFS/etc/resolv.conf"
 
 # ---------------------------------------------------------------------------
 step "4/8 installing live system packages"
 # ---------------------------------------------------------------------------
-# PolarOS packages built from this repository òÀÔ install AFTER all dependencies.
-${SUDO} mkdir -p "$ROOTFS/tmp/polaros-debs"
-${SUDO} cp "$ROOT"/build/repo/pool/main/*/*/*.deb "$ROOTFS/tmp/polaros-debs/" 2>/dev/null || true
+# PolarOS packages built from this repository — install AFTER all dependencies.
+mkdir -p "$ROOTFS/tmp/polaros-debs"
+cp "$ROOT"/build/repo/pool/main/*/*/*.deb "$ROOTFS/tmp/polaros-debs/" 2>/dev/null || true
 
 cat >"$ROOTFS/tmp/setup.sh" <<'SETUP'
 #!/bin/bash
 set -e
 export DEBIAN_FRONTEND=noninteractive
 
-${SUDO} apt-get update -qq
+apt-get update -qq
 if [ "$FAST" = "1" ]; then
-    ${SUDO} apt-get install -y --no-install-recommends \
+    apt-get install -y --no-install-recommends \
         linux-image-arm64 \
         live-boot live-boot-initramfs-tools \
         initramfs-tools \
@@ -116,7 +114,7 @@ if [ "$FAST" = "1" ]; then
         fastfetch \
         >/dev/null
 else
-    ${SUDO} apt-get install -y --no-install-recommends \
+    apt-get install -y --no-install-recommends \
         linux-image-arm64 \
         live-boot live-boot-initramfs-tools \
         initramfs-tools \
@@ -128,11 +126,11 @@ else
         >/dev/null
 fi
 
-# Install our packages òÀÔ all deps (fastfetch, etc.) are now present.
+# Install our packages — all deps (fastfetch, etc.) are now present.
 if ls /tmp/polaros-debs/*.deb >/dev/null 2>&1; then
     # Use apt-get install so dependency resolution works.
-    ${SUDO} apt-get install -y --no-install-recommends /tmp/polaros-debs/*.deb
-    ${SUDO} apt-get install -f -y --no-install-recommends
+    apt-get install -y --no-install-recommends /tmp/polaros-debs/*.deb
+    apt-get install -f -y --no-install-recommends
 fi
 
 # ---------------------------------------------------------------------------
@@ -151,7 +149,7 @@ EOF
 # Controlled by POLAROS_NO_ACCOUNT env var (1 = root only, no password).
 # -------------------------------------------------------------
 if [ "${POLAROS_NO_ACCOUNT:-0}" = "1" ]; then
-    # Root without any password òÀÔ usable with no UNIX account at all.
+    # Root without any password — usable with no UNIX account at all.
     echo 'root:' | chpasswd
     passwd -d root 2>/dev/null || true
 
@@ -237,7 +235,7 @@ systemctl enable ssh || true
 
 # Keep the image small: no docs, no apt caches.
 rm -rf /tmp/polaros-debs
-${SUDO} apt-get clean
+apt-get clean
 rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*.deb
 rm -rf /usr/share/doc/* /usr/share/man/* /usr/share/info/* 2>/dev/null || true
 
@@ -246,38 +244,38 @@ rm -f /etc/machine-id
 : > /etc/machine-id
 SETUP
 
-${SUDO} chmod +x "$ROOTFS/tmp/setup.sh"
-${SUDO} chroot "$ROOTFS" /tmp/setup.sh
+chmod +x "$ROOTFS/tmp/setup.sh"
+chroot "$ROOTFS" /tmp/setup.sh
 rm -f "$ROOTFS/tmp/setup.sh"
 
 # Rebuild the initramfs so live-boot hooks are included.
-${SUDO} chroot "$ROOTFS" update-initramfs -u -k all
+chroot "$ROOTFS" update-initramfs -u -k all
 
 # ---------------------------------------------------------------------------
 step "5/8 assembling the ISO tree"
 # ---------------------------------------------------------------------------
-${SUDO} rm -rf "$ISOROOT"
-${SUDO} mkdir -p "$ISOROOT/live" "$ISOROOT/boot/grub" "$ISOROOT/.disk"
+rm -rf "$ISOROOT"
+mkdir -p "$ISOROOT/live" "$ISOROOT/boot/grub" "$ISOROOT/.disk"
 
 KERNEL=$(ls "$ROOTFS"/boot/vmlinuz-* | head -1)
 INITRD=$(ls "$ROOTFS"/boot/initrd.img-* | head -1)
-${SUDO} cp "$KERNEL" "$ISOROOT/live/vmlinuz"
-${SUDO} cp "$INITRD" "$ISOROOT/live/initrd.img"
+cp "$KERNEL" "$ISOROOT/live/vmlinuz"
+cp "$INITRD" "$ISOROOT/live/initrd.img"
 
-${SUDO} cat >"$ISOROOT/.disk/info" <<EOF
+cat >"$ISOROOT/.disk/info" <<EOF
 PolarOS 1.0 (ARM64) - $(date -u +%Y-%m-%d)
 EOF
 
 # ---------------------------------------------------------------------------
 step "6/8 building squashfs"
 # ---------------------------------------------------------------------------
-${SUDO} mksquashfs "$ROOTFS" "$ISOROOT/live/filesystem.squashfs" \
+mksquashfs "$ROOTFS" "$ISOROOT/live/filesystem.squashfs" \
     -comp "$SQUASHFS_COMP" -b "$SQUASHFS_BLOCK" -no-progress -noappend
 
 # ---------------------------------------------------------------------------
 step "7/8 building the EFI boot image"
 # ---------------------------------------------------------------------------
-${SUDO} cat >"$ISOROOT/boot/grub/grub.cfg" <<'EOF'
+cat >"$ISOROOT/boot/grub/grub.cfg" <<'EOF'
 set timeout=10
 set default=0
 
@@ -310,17 +308,17 @@ grub-mkstandalone --format=arm64-efi --output="$WORK/BOOTAA64.EFI" \
 
 # A FAT image holding the standalone GRUB binary, used as the El Torito
 # EFI boot image. Created with mkfs.vfat + mtools: no loop device needed.
-${SUDO} rm -f "$ISOROOT/boot/grub/efi.img"
-${SUDO} dd if=/dev/zero of="$ISOROOT/boot/grub/efi.img" bs=1M count=16 status=none
-${SUDO} mkfs.vfat -n POLAROS_EFI "$ISOROOT/boot/grub/efi.img" >/dev/null
-${SUDO} mmd -i "$ISOROOT/boot/grub/efi.img" ::/EFI ::/EFI/BOOT
-${SUDO} mcopy -i "$ISOROOT/boot/grub/efi.img" "$WORK/BOOTAA64.EFI" ::/EFI/BOOT/BOOTAA64.EFI
+rm -f "$ISOROOT/boot/grub/efi.img"
+dd if=/dev/zero of="$ISOROOT/boot/grub/efi.img" bs=1M count=16 status=none
+mkfs.vfat -n POLAROS_EFI "$ISOROOT/boot/grub/efi.img" >/dev/null
+mmd -i "$ISOROOT/boot/grub/efi.img" ::/EFI ::/EFI/BOOT
+mcopy -i "$ISOROOT/boot/grub/efi.img" "$WORK/BOOTAA64.EFI" ::/EFI/BOOT/BOOTAA64.EFI
 
 # ---------------------------------------------------------------------------
 step "8/8 building the ISO"
 # ---------------------------------------------------------------------------
 mkdir -p "$ROOT/build"
-${SUDO} xorriso -as mkisofs \
+xorriso -as mkisofs \
     -iso-level 3 \
     -full-iso9660-filenames \
     -volid POLAROS_LIVE \
@@ -333,12 +331,3 @@ ${SUDO} xorriso -as mkisofs \
 
 ls -lh "$ROOT/build/$ISO_NAME"
 printf '\nISO ready: build/%s\n' "$ISO_NAME"
-
-
-
-
-
-
-
-
-
