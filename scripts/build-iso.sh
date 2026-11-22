@@ -249,13 +249,13 @@ chroot "$ROOTFS" /tmp/setup.sh
 rm -f "$ROOTFS/tmp/setup.sh"
 
 # Rebuild the initramfs so live-boot hooks are included.
-# update-initramfs skipped in container (will run on first boot)
+# update-initramfs skipped in container (will run on first boot)\n\n# Unmount virtual filesystems before squashfs to avoid "Failed to read" errors\numount -l "$ROOTFS/proc" 2>/dev/null || true\numount -l "$ROOTFS/sys" 2>/dev/null || true\numount -l "$ROOTFS/dev" 2>/dev/null || true\numount -l "$ROOTFS/dev/pts" 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
 step "5/8 assembling the ISO tree"
 # ---------------------------------------------------------------------------
 rm -rf "$ISOROOT"
-mkdir -p "$ISOROOT/live" "$ISOROOT/boot/grub" "$ISOROOT/.disk"
+mkdir -p "$ISOROOT/live" "$ISOROOT/boot/grub" "$ISOROOT/.disk"\nchmod 777 "$ISOROOT"
 
 KERNEL=$(ls "$ROOTFS"/boot/vmlinuz-* | head -1)
 INITRD=$(ls "$ROOTFS"/boot/initrd.img-* | head -1)
@@ -269,7 +269,7 @@ EOF
 # ---------------------------------------------------------------------------
 step "6/8 building squashfs"
 # ---------------------------------------------------------------------------
-mksquashfs "$ROOTFS" "$ISOROOT/live/filesystem.squashfs" \
+mksquashfs "$ROOTFS" "$ISOROOT/live/filesystem.squashfs" \\\n    -e proc -e sys -e dev \
     -comp "$SQUASHFS_COMP" -b "$SQUASHFS_BLOCK" -no-progress -noappend
 
 # ---------------------------------------------------------------------------
@@ -331,6 +331,8 @@ xorriso -as mkisofs \
 
 ls -lh "$ROOT/build/$ISO_NAME"
 printf '\nISO ready: build/%s\n' "$ISO_NAME"
+
+
 
 
 
