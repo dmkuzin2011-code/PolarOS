@@ -138,9 +138,8 @@ EOF
 grub-mkstandalone \
     --format=arm64-efi \
     --output="$ISOROOT/EFI/BOOT/BOOTAA64.EFI" \
-    --modules="part_gpt part_msdos fat ext2 normal linuxefi" \
+    --modules="part_gpt part_msdos fat ext2 normal" \
     "boot/grub/grub.cfg=$ISOROOT/boot/grub/grub.cfg"
-
 # ==============================================================================
 # 7/8 assembling the ISO image
 # ==============================================================================
