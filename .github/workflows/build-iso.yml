@@ -49,11 +49,12 @@ jobs:
       - name: Make scripts executable
         run: chmod +x scripts/*.sh
 
-      # Run ISO build with -Fast flag and keep rootfs cache for subsequent runs
+      # Run ISO build without UNIX account (root, no password) + fast mode + rootfs cache
       - name: Build Live ISO
         run: |
           export POLAROS_FAST=1
           export POLAROS_KEEP_ROOTFS=1
+          export POLAROS_NO_ACCOUNT=1
           ./scripts/build-iso.sh
 
       # Verify that the ISO file was actually created
