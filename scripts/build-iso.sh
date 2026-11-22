@@ -33,7 +33,7 @@ ISO_NAME=${ISO_NAME:-polaros-1.0-arm64.iso}
 FAST=${POLAROS_FAST:-0}
 if [ "$FAST" = "1" ]; then
     SQUASHFS_COMP=${POLAROS_SQUASHFS_COMP:-gzip}
-    SQUASHFS_BLOCK=${POLAROS_SQUASHFS_BLOCK:-4M}
+    SQUASHFS_BLOCK=${POLAROS_SQUASHFS_BLOCK:-4096}
 else
     SQUASHFS_COMP=${POLAROS_SQUASHFS_COMP:-xz}
     SQUASHFS_BLOCK=${POLAROS_SQUASHFS_BLOCK:-1M}
@@ -331,4 +331,5 @@ xorriso -as mkisofs \
 
 ls -lh "$ROOT/build/$ISO_NAME"
 printf '\nISO ready: build/%s\n' "$ISO_NAME"
+
 
