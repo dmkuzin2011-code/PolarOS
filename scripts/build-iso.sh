@@ -230,8 +230,8 @@ TTYPath=/dev/tty1
 [Install]
 WantedBy=multi-user.target
 EOF
-systemctl enable polaros-autostart.service || true
-systemctl enable ssh || true
+# systemctl skipped in container
+# systemctl skipped in container
 
 # Keep the image small: no docs, no apt caches.
 rm -rf /tmp/polaros-debs
@@ -249,7 +249,7 @@ chroot "$ROOTFS" /tmp/setup.sh
 rm -f "$ROOTFS/tmp/setup.sh"
 
 # Rebuild the initramfs so live-boot hooks are included.
-chroot "$ROOTFS" update-initramfs -u -k all
+# update-initramfs skipped in container (will run on first boot)
 
 # ---------------------------------------------------------------------------
 step "5/8 assembling the ISO tree"
@@ -331,5 +331,8 @@ xorriso -as mkisofs \
 
 ls -lh "$ROOT/build/$ISO_NAME"
 printf '\nISO ready: build/%s\n' "$ISO_NAME"
+
+
+
 
 
