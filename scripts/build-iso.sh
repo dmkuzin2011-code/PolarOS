@@ -159,4 +159,6 @@ xorriso -as mkisofs \
 # 8/8 Done!
 # ==============================================================================
 echo -e "${BLUE}==> 8/8 Build complete!${NC}"
-echo "ISO created at: $BUILD_DIR/polaros-1.0-arm64.iso"
+# Copy ISO to the project build directory for GitHub Actions
+mkdir -p /work/build
+cp "$BUILD_DIR/polaros-1.0-arm64.iso" /work/build/
